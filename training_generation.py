@@ -22,19 +22,36 @@ def gen_training_data(opt):
     train_out = []
     
     if opt == 1:
-        train_in = None
+        train_in = numpy.arange(0, 60, 60/1000.0)   # 0:60/1000:60
+        train_out = numpy.sin(train_in)
+        input_length = len(train_in)
+        train_in = numpy.ones(input_length)
     elif opt == 2:
-        train_in = None
+        aa = numpy.arange(0, 120, 120/1000.0)   # 0:120/1000:120
+        train_out = numpy.sin(aa)
+        train_in = numpy.ones(len(train_out))
     elif opt == 3:
-        train_in = None
+        aa = numpy.arange(0, 120, 120/1000.0)   # 0:120/1000:120
+        bb = numpy.sin(aa)
+        train_in  = numpy.zeros(50)
+        train_out = numpy.zeros(50)
+        train_in  = numpy.append(train_in, numpy.ones(200))
+        train_out = numpy.append(train_out, bb[0:201])  # bb(1:200)
+        train_in  = numpy.append(train_in, numpy.zeros(60))
+        train_out = numpy.append(train_out, numpy.zeros(60))
+        train_in  = numpy.append(train_in, numpy.ones(100))
+        train_out = numpy.append(train_out, bb[0:101])  # bb(1:100)
+        train_in  = numpy.append(train_in, numpy.zeros(30))
+        train_out = numpy.append(train_out, numpy.zeros(30))
+        train_in  = [train_in, numpy.append(0, train_in[:]), numpy.append([0, 0], train_in[:len(train_in)-1])]
+        train_out = numpy.append(0, train_out[:])
     elif opt == 4:
-        #aa = numpy.zeros(10) + numpy.ones(10) + numpy.zeros(10) + numpy.ones(10) + numpy.zeros(10) + numpy.ones(10)
-        #bb = aa + aa + aa + aa + aa + aa + aa + aa + aa + aa + aa + aa
-        #train_in = numpy.zeros(90) + numpy.ones(80) + numpy.zeros(80) + numpy.ones(60) + numpy.zeros(100) + numpy.ones(100) + numpy.zeros(50)
-        #input_length = length(train_in)
-        #train_out = numpy.multiply(train_in, bb[:input_length])
-        #train_in = [[train_in], [0, train_in[:len(train_in)-1], [0, 0, train_in[:len(train_in)-2]]]]
-        train_in = None
+        aa = numpy.concatenate((numpy.zeros(10), numpy.ones(10), numpy.zeros(10), numpy.ones(10), numpy.zeros(10), numpy.ones(10)))
+        bb = numpy.concatenate((aa, aa, aa, aa, aa, aa, aa, aa, aa, aa, aa, aa))
+        train_in = numpy.concatenate((numpy.zeros(90), numpy.ones(80), numpy.zeros(80), numpy.ones(60), numpy.zeros(100), numpy.ones(100), numpy.zeros(50)))
+        input_length = len(train_in)
+        train_out = numpy.multiply(train_in, bb[:input_length])  # bb(1:input_length)
+        train_in = [train_in, numpy.append(0, train_in[:]), numpy.append([0, 0], train_in[:len(train_in)-1])]
     elif opt == 5:
         aa = numpy.arange(0, 50+0.1, 0.1)   #0:0.1:50
         bb = numpy.sin(aa)
@@ -77,19 +94,15 @@ def gen_training_data(opt):
         train_in = numpy.ones(len(train_out))
 
     # Graph the Training Data Inputs and Outputs
-    pyplot.figure()
-    #pyplot.subplot(2, 1, 1)
-    #pyplot.title("Training Data Input")
-    #pyplot.plot(train_in)
-    pyplot.subplot(2, 1, 2)
-    pyplot.title("Training Data Output")
-    pyplot.plot(train_out)
-    pyplot.show()
+    #pyplot.figure()
+    #pyplot.title("Training Data Output")
+    #pyplot.plot(train_out)
+    #pyplot.show()
     
     return [train_in, train_out]
 
 
 if __name__ == '__main__':
-    for i in range(5, 10):
+    for i in range(3, 10):
         gen_training_data(i)
     sys.exit
