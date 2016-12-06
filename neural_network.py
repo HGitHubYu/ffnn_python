@@ -8,6 +8,7 @@
 #
 # A Python-implementation of Feed-Forward Neural Networks, as demonstrated
 # by Huan Yu's existing Feed-Forward Neural Network code.
+import math
 import random
 import sys
 
@@ -112,8 +113,6 @@ class NeuralNetwork(object):
             print "Number of Input Units and Input Patterns do not match."
             return
 
-        
-
         # Setting Parameters
         first_step = 0
         last_step = input_length
@@ -123,11 +122,43 @@ class NeuralNetwork(object):
         ACT[1:1+self.numInput, first_step:last_step+1] = input  # ACT(2:numInput+1, firstStep:lastStep)
         ACTD = numpy.zeros((self.numNodes, last_step))
 
-        print ACT
-        print ACTD
+        # Assign Parameters
+        weights_source = []
+        weights_dest = []
+        weights_val = []
+        for i in range(0, len(self.weights)):
+            weight = self.weights[i]
+            weights_source.append(weight.source)
+            weights_dest.append(weight.dest)
+            weights_val.append(weight.val)
+        weights_dest.append(-1) # Used as a sign if the index goes out of range
 
+        for step in range(first_step, last_step):
+
+            # Feed Forward
+            next_dest = weights_dest
+            weight_index = 0;
+
+            while weight_index < len(self.weights):
+                unit_input_sum = 0
+                dest = next_dest
+                while dest == next_dest:         
+                    unit_input_sum = unit_input_sum + (weights_val[weight_index] * ACT[weights_source[weight_index], step])
+                    weight_index = weight_index + 1
+                    next_dest = weights_dest[weight_index]
+                if dest >= (self.numNodes - self.numOutput):
+                    # Output Unit, Derivative = 1
+                    ACT[dest, step] = unit_input_sum;
+                    ACTD[dest, step] = 1;
+                else:
+                    # Hidden Unit, Use Activation Function
+                    ACT[dest, step], ACTD[dest, step] = self.__det_act_func(2, unit_input_sum)
+
+        output = ACT[(self.numNodes - self.numOutput):(self.numNodes+1), first_step:(last_step+1)]
+        return output
+        
 if __name__ == '__main__':
     ann = NeuralNetwork(2, [4, 4, 4], 2)
     #ann.print_info()
-    ann.simulate([[1, 0.5], [2, 1.5]])
+    print ann.simulate([[1], [1]])
     sys.exit
