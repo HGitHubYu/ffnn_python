@@ -72,53 +72,6 @@ class NeuralNetwork(object):
         for i in range(0, len(weights)):
             print "    -Weights: %.2d, %.2d, %.4f" % (weights[i].source, weights[i].dest, weights[i].val)
 
-    """
-    # Generates training data corresponding to the given type. Current allows
-    # 8 different training data setups.
-    # Parameters: type - The type of training data to produce
-    def gen_training_data(self, type):
-        training_data = [[], []]
-        if type==1:     #
-            training_data[0] = numpy.arange(0, 60, 60/1000.0).tolist()
-            training_data[1] = numpy.sin(training_data[0])
-            training_data[0] = numpy.ones([1, len(training_data[0])]).tolist()
-        elif type==2:   #
-            aa = numpy.arange(0, 120, 120/1000.0)
-            training_data[1] = numpy.sin(aa)
-            training_data[0] = numpy.ones([1, len(aa)])
-        elif type==3:   #
-            aa = numpy.arange(0, 120, 120/1000.0)
-            bb = numpy.sin(aa)
-            training_data[0] = numpy.zeros([1, 50])
-            training_data[1] = numpy.zeros([1, 50])
-            training_data[0] = [training_data[0], numpy.ones([1, 200])]
-            training_data[1] = [training_data[1], bb[numpy.arange(1, 200+1)]]
-            training_data[0] = [training_data[0], numpy.zeros([1, 60])]
-            training_data[1] = [training_data[1], numpy.zeros([1, 60])]
-            training_data[0] = [training_data[0], numpy.ones([1, 100])]
-            training_data[1] = [training_data[1], bb[numpy.arange(1, 100+1)]]
-            training_data[0] = [training_data[0], numpy.zeros([1, 30])]
-            training_data[1] = [training_data[1], numpy.zeros([1, 30])]
-            training_data[0] = [[training_data[0]], [0, training_data[0][numpy.arange(1, len(training_data[0]))]], [0, 0, training_data[0][numpy.arange(1, len(training_data[0])-1)]]]
-            training_data[1] = [0, training_data[1][numpy.arange(1, len(training_data[1]))]]
-        else:           # Default sin() waveform
-            aa = numpy.arange(0, 120, 120/1000.0)
-            training_data[0] = numpy.ones(1, len(aa))
-            training_data[1] = numpy.sin(aa)
-
-        print "%d, %d" % (len(training_data[0]), len(training_data[1]))
-        print training_data[0]
-        print training_data[1]
-        #pyplot.figure()
-        #pyplot.title('Training Data Input')
-        #pyplot.plot(training_data[0])
-
-        #pyplot.figure()
-        #pyplot.title('Training Data Output')
-        #pyplot.show(training_data[1])
-        return training_data
-    """
-
     # Returns the activation function result and derivative depending on the
     # given type. Currently allows Sigmoid and Hyperbolic Tangent Activation
     # Parameters: opt    - An integer signifying the activation function type
@@ -140,7 +93,41 @@ class NeuralNetwork(object):
             act_d = act * (1 - act)
         return [act, act_d]
 
+    # Simulates one walkthrough of the Feed Forward Neural Network. Requires
+    # that the input be the same dimensions as the number of input neurons.
+    # Parameters: input   - Input Data for the neural network.
+    def simulate(self, input):
+
+        # Get the size of the input, and convert it to a numpy array, if not
+        # already.
+        input = numpy.array(input)
+        input_dim = len(input)
+        if input.ndim == 2:
+            input_length = len(input[0])
+        else:
+            input_length = input_dim
+            input_dim = 1
+
+        if input_dim != self.numInput:
+            print "Number of Input Units and Input Patterns do not match."
+            return
+
+        
+
+        # Setting Parameters
+        first_step = 0
+        last_step = input_length
+
+        ACT = numpy.zeros((self.numNodes, last_step))
+        ACT[0, :] = 1;  # Constant Bias Unit ACT(1,:)
+        ACT[1:1+self.numInput, first_step:last_step+1] = input  # ACT(2:numInput+1, firstStep:lastStep)
+        ACTD = numpy.zeros((self.numNodes, last_step))
+
+        print ACT
+        print ACTD
+
 if __name__ == '__main__':
     ann = NeuralNetwork(2, [4, 4, 4], 2)
-    ann.print_info()
+    #ann.print_info()
+    ann.simulate([[1, 0.5], [2, 1.5]])
     sys.exit
