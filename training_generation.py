@@ -2,7 +2,7 @@
 
 """Port of Huan Yu's Feed-Forward Neural Network to Python"""
 # Training Data Generator
-# Modified by Jered Tupik on 11/28/2016
+# Modified by Jered Tupik on 12/5/2016
 #
 # Georgia Institute of Technology
 #

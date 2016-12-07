@@ -2,7 +2,7 @@
 
 """Port of Huan Yu's Feed-Forward Neural Network to Python"""
 # Feed-Forward Neural Network
-# Modified by Jered Tupik on 11/28/2016
+# Modified by Jered Tupik on 12/6/2016
 #
 # Georgia Institute of Technology
 #
@@ -118,7 +118,7 @@ class NeuralNetwork(object):
         last_step = input_length
 
         ACT = numpy.zeros((self.numNodes, last_step))
-        ACT[0, :] = 1;  # Constant Bias Unit ACT(1,:)
+        ACT[0, :] = 1  # Constant Bias Unit ACT(1,:)
         ACT[1:1+self.numInput, first_step:last_step+1] = input  # ACT(2:numInput+1, firstStep:lastStep)
         ACTD = numpy.zeros((self.numNodes, last_step))
 
@@ -136,7 +136,7 @@ class NeuralNetwork(object):
         for step in range(first_step, last_step):
 
             # Feed Forward
-            next_dest = weights_dest
+            next_dest = weights_dest[0]
             weight_index = 0;
 
             while weight_index < len(self.weights):
@@ -156,9 +156,137 @@ class NeuralNetwork(object):
 
         output = ACT[(self.numNodes - self.numOutput):(self.numNodes+1), first_step:(last_step+1)]
         return output
-        
+
+    # Trains our Feed Forward Neural Network using back propogation.
+    # Requires that our input and output training data conforms to the
+    # number of input and output neurons.
+    # Parameters: train_in  - The input data to be trained on.
+    #             train_out - The output data to be trained on.
+    #             d_weight  - The maximum weight change per interation.
+    def train(self, train_in, train_out, d_weight):
+
+        # Parameter Checking
+        # Get the size of the input, and convert it to a numpy array, if not
+        # already.
+        train_in = numpy.array(train_in)
+        input_dim = len(train_in)
+        if train_in.ndim == 2:
+            input_length = len(train_in[0])
+        else:
+            input_length = input_dim
+            input_dim = 1
+
+        # Get the size of the output, and convert it to a numpy array, if not
+        # already.
+        train_out = numpy.array(train_out)
+        output_dim = len(train_out)
+        if train_out.ndim == 2:
+            output_length = len(train_out[0])
+        else:
+            output_length = output_dim
+            output_dim = 1
+
+        if input_dim != self.numInput:
+            print "Number of Input Units and Input Patterns do not match."
+            return
+        if output_dim != self.numOutput:
+            print "Number of Output Units and Target Patterns do not match."
+            return
+        if input_length != output_length:
+            print "Length of Input and Output Samples is Different."
+            return
+
+        # Setting Parameters
+        first_step = 0
+        last_step = input_length
+
+        ACT = numpy.zeros((self.numNodes, last_step))
+        ACT[0, :] = 1   # Constant Bias Unit
+        ACT[1:1+self.numInput, first_step:last_step+1] = train_in
+        ACTD = numpy.zeros((self.numNodes, last_step))
+
+        # Assign Parameters
+        # Assign Parameters
+        weights_source = []
+        weights_dest = []
+        weights_val = []
+        for i in range(0, len(self.weights)):
+            weight = self.weights[i]
+            weights_source.append(weight.source)
+            weights_dest.append(weight.dest)
+            weights_val.append(weight.val)
+        weights_dest.append(-1) # Used as a sign if the index goes out of range
+
+        step_output_error_derivatives_weights = numpy.zeros((len(weights_source), self.numOutput, last_step))
+        total_output_error_derivatives_weights = numpy.zeros(len(weights_source))
+
+        # Main Loop
+        for step in range(first_step, last_step):
+
+            # Feed Forward
+            next_dest = weights_dest[0]
+            weight_index = 0
+            while weight_index < len(weights_source):
+                unit_input_sum = 0;
+                dest = next_dest
+                while dest == next_dest:
+                    unit_input_sum = unit_input_sum + (weights_val[weight_index] * ACT[weights_source[weight_index], step])
+                    weight_index = weight_index + 1
+                    next_dest = weights_dest[weight_index]
+                if dest >= (self.numNodes - self.numOutput):
+                    # Output Unit, Derivative = 1
+                    ACT[dest, step] = unit_input_sum
+                    ACTD[dest, step] = 1
+                else:
+                    # Hidden Unit, Use Activation Function
+                    ACT[dest, step], ACTD[dest, step] = self.__det_act_func(2, unit_input_sum)
+
+            # Back Propogation
+            output_derivatives_weights = numpy.zeros((len(weights_source), self.numOutput))
+            output_derivatives_unit_activity = numpy.zeros((self.numNodes, self.numOutput))
+            output_derivatives_unit_activity[(self.numNodes-self.numOutput):self.numNodes, 0:self.numOutput] = numpy.identity(self.numOutput)
+
+            next_dest = weights_dest[len(weights_source)]
+            weight_index = len(weights_source)-1
+            while weight_index >= 0:
+                dest = next_dest
+                while dest == next_dest:
+                    source = weights_source[weight_index]
+                    output_derivatives_weights[weight_index, :] = numpy.multiply(output_derivatives_unit_activity[dest, :], numpy.multiply(ACTD[dest, step], ACT[source, step]))
+
+                    # Calculate derivatives
+                    output_derivatives_unit_activity[source, :] = numpy.add(output_derivatives_unit_activity[source, :], numpy.multiply(output_derivatives_unit_activity[dest, :], numpy.multiply(ACTD[dest, step], weights_val[weight_index])))
+
+                    # Get Next Destination Node
+                    weight_index = weight_index - 1
+                    if weight_index < 0:
+                        break;
+                    next_dest = weights_dest[weight_index]
+
+            # Calculate the current step output error derivatives
+            for UI in range(0, self.numOutput):
+                if train_out.ndim == 1:
+                    step_output_error_derivatives_weights[:, UI, step] = numpy.multiply(output_derivatives_weights[:, UI], (ACT[UI+self.numNodes-self.numOutput, step] - train_out[step]))
+                else:
+                    step_output_error_derivatives_weights[:, UI, step] = numpy.multiply(output_derivatives_weights[:, UI], (ACT[UI+self.numNodes-self.numOutput, step] - train_out[UI, step]))
+
+        # Calculate the total output error derivatives
+        for WI in range(0, len(weights_source)):
+            for UI in range(0, self.numOutput):
+                for st in range(first_step, last_step):
+                    total_output_error_derivatives_weights[WI] = (total_output_error_derivatives_weights[WI]+step_output_error_derivatives_weights[WI, UI, st])
+
+        # Adjust Weights
+        weights_val = numpy.subtract(weights_val, numpy.multiply(total_output_error_derivatives_weights, d_weight))
+        for WI in range(1, len(weights_source)):
+            self.weights[WI].val = weights_val[WI];
+
+    
 if __name__ == '__main__':
-    ann = NeuralNetwork(2, [4, 4, 4], 2)
+    ann = NeuralNetwork(10, [4, 4, 4], 4)
     #ann.print_info()
-    print ann.simulate([[1], [1]])
+    for i in range(0, 10):
+        print "Simulation Run: %d. Target (1, 2, 3, 4): " % i
+        print ann.simulate([[0], [0.1], [0.2], [0.3], [0.4], [0.5], [0.7], [0.8], [0.9], [1.0]])
+        ann.train([[0], [0.1], [0.2], [0.3], [0.4], [0.5], [0.7], [0.8], [0.9], [1.0]], [[1], [2], [3], [4]], 1)
     sys.exit
