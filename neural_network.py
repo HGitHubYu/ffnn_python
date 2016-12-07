@@ -15,6 +15,8 @@ import sys
 import matplotlib.pyplot as pyplot
 import numpy
 
+from training_generation import gen_training_data
+
 class Weight(object):
     pass
 
@@ -283,10 +285,66 @@ class NeuralNetwork(object):
 
     
 if __name__ == '__main__':
-    ann = NeuralNetwork(10, [4, 4, 4], 4)
+    #ann = NeuralNetwork(10, [4, 4, 4], 4)
     #ann.print_info()
-    for i in range(0, 10):
-        print "Simulation Run: %d. Target (1, 2, 3, 4): " % i
-        print ann.simulate([[0], [0.1], [0.2], [0.3], [0.4], [0.5], [0.7], [0.8], [0.9], [1.0]])
-        ann.train([[0], [0.1], [0.2], [0.3], [0.4], [0.5], [0.7], [0.8], [0.9], [1.0]], [[1], [2], [3], [4]], 1)
+    #for i in range(0, 10):
+    #    print "Simulation Run: %d. Target (1, 2, 3, 4): " % i
+    #    print ann.simulate([[0], [0.1], [0.2], [0.3], [0.4], [0.5], [0.7], [0.8], [0.9], [1.0]])
+    #    ann.train([[0], [0.1], [0.2], [0.3], [0.4], [0.5], [0.7], [0.8], [0.9], [1.0]], [[1], [2], [3], [4]], 1)
+    train_in, train_out = gen_training_data(7)
+
+    input_dim = len(train_in)
+    if train_in.ndim == 2:
+        input_length = len(train_in[0])
+    else:
+        input_length = input_dim
+        input_dim = 1
+
+    output_dim = len(train_out)
+    if train_out.ndim == 2:
+        output_length = len(train_out[0])
+    else:
+        output_length = output_dim
+        output_dim = 1
+
+    num_input = input_dim
+    hidden_neurons = [5]
+    num_output = output_dim
+    d_weight = 0.0005#0.0002
+    error = []
+    error_threshold = 0.05#0.005
+    error_iteration = 1000000
+    training_iteration=0
+    training_iteration_threshold=500#1000
+
+    ann = NeuralNetwork(num_input, hidden_neurons, num_output)
+
+    while (error_iteration > error_threshold) and (training_iteration < training_iteration_threshold):
+        error_iteration = 0
+        training_iteration = training_iteration + 1
+        ann.train(train_in, train_out, d_weight)
+        output = ann.simulate(train_in)
+        for m in range(0, output_dim):
+            for n in range(0, output_length):
+                if output_dim == 1:
+                    error_iteration = error_iteration + 0.5 * ((output[m, n] - train_out[n])**2)
+                else:
+                    error_iteration = error_iteration + 0.5 * ((output[m, n] - train_out[m, n])**2)
+        error.append(error_iteration)
+        print "%d, %f" % (training_iteration, error_iteration)
+
+    print "Iterations Taken: %d" % training_iteration
+    print "Final Error: %f" % error_iteration
+   
+    pyplot.figure()
+    pyplot.subplot(1, 2, 1)
+    pyplot.title("Neural Network Error")
+    pyplot.plot(error)
+    pyplot.subplot(1, 2, 2)
+    pyplot.title("Input/Output Comparisons")
+    pyplot.plot(train_out, 'b-')
+    pyplot.plot(output[0], 'r-')
+    #pyplot.plot(train_in[1, :], 'g-')
+    pyplot.show()
+
     sys.exit
